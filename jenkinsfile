@@ -1,0 +1,136 @@
+#!groovy
+import groovy.json.JsonOutput
+import java.util.Optional
+import hudson.tasks.test.AbstractTestResultAction
+import hudson.model.Actionable
+import hudson.tasks.junit.CaseResult
+
+// Agents labels
+def masterLabel = 'master'
+def agentLabel  = 'slave'
+
+// Hosts and ports
+
+// GIT
+def gitCredId       = 'machine_09_jenkins_token'
+def gitOrg          = 'PankajKumar-Jha'
+def gitHost         = 'github.houston.softwaregrp.net'
+// def gitHost         = 'github.com'
+def gitRepo         = 'BankDemo'
+def srcGitRepo_SSH  = 'git@' + gitHost + ':' + gitOrg + '/' + gitRepo + '.git'
+def srcGitRepo_http = 'https://' + gitHost + '/' + gitOrg + '/' + gitRepo + '.git'
+def srcGitBranch    = 'dev'
+
+//teams
+// def teamsURL        = 'https://'
+def msg_01          = 'BankDemo Build Notification'
+def status_01       = 'Build Started'
+def status_02       = 'Build Successful'
+def status_03       = 'Build failed'
+def status_04       = 'Build packaged'
+def status_05       = 'Build packaged archived'
+
+//ANT and ED Paths
+def antPath         = 'C:\\Users\\Public\\Micro Focus\\Enterprise Developer\\eclipse\\plugins\\org.apache.ant_1.10.12.v20211102-1452'
+def entDevPath      = '%PROGRAMFILES(X86)%\\Micro Focus\\Enterprise Developer'
+def driverFile      = 'build.xml'
+def baseDir         = '.\\sources'
+def loadDir         = 'New_Config'
+def pythonPath      = 'C:\\Users\\mfisys1\\AppData\\Local\\Microsoft\\WindowsApps'
+
+//HUB Links
+def hubOrg          = 'amc-blueprints'
+def hubHost         = 'github.houston.softwaregrp.net'
+def hubRepo         = 'es-automation-templates'
+def hubGitRepo_http = 'https://' + hubHost + '/' + hubOrg + '/' + hubRepo + '.git'
+def packagePath     = 'Development\\Scripts'
+def hubBranch       = 'main'
+
+pipeline {
+    agent any 
+
+     stages {
+        stage('Git Clone/Regresh'){
+            steps {
+                checkout(  [$class: 'GitSCM', 
+                            branches: [[name: srcGitBranch]], 
+                            extensions: [], 
+                            userRemoteConfigs: [[credentialsId: gitCredId, url: srcGitRepo_http]]
+                            ]
+                        )
+
+                // office365ConnectorSend message: msg_01, status: status_01, webhookUrl: teamsURL
+            }
+        }
+
+        stage('Build'){
+            steps {
+                bat """
+                    @echo off
+                    echo *****************************************************Build Started.
+                    echo **Set Local variables_____________________________________________                
+                    echo
+                """
+                bat """
+                    @echo off
+                    echo **Set Path _______________________________________________________  
+                    set ANT_HOME=${antPath}
+                    set PATH=%PATH%;${antPath}\\bin;${entDevPath}\\bin
+                    set ANT_OPTS=-Xmx1024m
+
+                    call "%ProgramFiles(x86)%\\Micro Focus\\Enterprise Developer\\setupenv.bat"
+                    echo 
+                    echo "PATH       : " %PATH%
+                    echo "ANT_HOME   : " ${antPath}
+                    echo "Workspace  : " ${WORKSPACE}
+                    echo
+                    call ant -lib "${entDevPath}\\bin\\mfant.jar" -f ${driverFile} -Dbasedir=${WORKSPACE}\\${baseDir} -Dloaddir=${WORKSPACE}\\${loadDir} -Dset64bit=true
+                    echo
+                    echo ***************************************************Build Commpleted.
+                    echo 
+                """
+            }
+            
+        }
+
+        stage('Test'){
+            steps{
+                bat """ 
+                    @echo off
+                    echo "This featuer is coming soon."
+                """
+            }
+            
+
+        }
+
+        stage('Artifacts collection'){
+            steps {
+                dir  (hubRepo) {
+                    checkout(  [$class: 'GitSCM', 
+                                branches: [[name: hubBranch]], 
+                                extensions: [], 
+                                userRemoteConfigs: [[url: hubGitRepo_http]]
+                                ]
+                            )
+                }
+
+                bat """ 
+                    @echo off
+                    cd ${hubRepo}
+                    git sparse-checkout init --cone
+                    git sparse-checkout set ${packagePath} 
+                    cd ..
+                    ${pythonPath}\\python3 ${WORKSPACE}\\${hubRepo}\\${packagePath}\\createDeployPackage.py "${WORKSPACE}\\${loadDir}" "${WORKSPACE}" "${srcGitBranch}" "${BUILD_NUMBER}" "APP"
+                """
+
+            }   
+        }
+     }    
+     post {
+        always {
+           archiveArtifacts allowEmptyArchive: true, artifacts: 'build_'+BUILD_NUMBER+'*.zip', onlyIfSuccessful: true
+        }
+    }
+
+}
