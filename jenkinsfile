@@ -21,15 +21,6 @@ def srcGitRepo_SSH  = 'git@' + gitHost + ':' + gitOrg + '/' + gitRepo + '.git'
 def srcGitRepo_http = 'https://' + gitHost + '/' + gitOrg + '/' + gitRepo + '.git'
 def srcGitBranch    = 'dev'
 
-//teams
-// def teamsURL        = 'https://'
-def msg_01          = 'BankDemo Build Notification'
-def status_01       = 'Build Started'
-def status_02       = 'Build Successful'
-def status_03       = 'Build failed'
-def status_04       = 'Build packaged'
-def status_05       = 'Build packaged archived'
-
 //ANT and ED Paths
 def antPath         = 'C:\\Users\\Public\\Micro Focus\\Enterprise Developer\\eclipse\\plugins\\org.apache.ant_1.10.12.v20211102-1452'
 def entDevPath      = '%PROGRAMFILES(X86)%\\Micro Focus\\Enterprise Developer'
