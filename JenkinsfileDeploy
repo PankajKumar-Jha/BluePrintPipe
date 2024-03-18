@@ -1,0 +1,67 @@
+#!groovy
+import groovy.json.JsonOutput
+import java.util.Optional
+import hudson.tasks.test.AbstractTestResultAction
+import hudson.model.Actionable
+import hudson.tasks.junit.CaseResult
+
+// Agents labels
+def masterLabel = 'master'
+def agentLabel  = 'slave'
+
+// Hosts and ports
+
+// GIT
+def gitCredId       = 'machine_09_jenkins_token'
+def gitOrg          = 'PankajKumar-Jha'
+def gitHost         = 'github.houston.softwaregrp.net'
+// def gitHost         = 'github.com'
+def gitRepo         = 'BankDemo'
+def srcGitRepo_SSH  = 'git@' + gitHost + ':' + gitOrg + '/' + gitRepo + '.git'
+def srcGitRepo_http = 'https://' + gitHost + '/' + gitOrg + '/' + gitRepo + '.git'
+def srcGitBranch    = 'dev'
+
+//ANT and ED Paths
+def antPath         = 'C:\\Users\\Public\\Micro Focus\\Enterprise Developer\\eclipse\\plugins\\org.apache.ant_1.10.12.v20211102-1452'
+def entDevPath      = '%PROGRAMFILES(X86)%\\Micro Focus\\Enterprise Developer'
+def driverFile      = 'build.xml'
+def baseDir         = '.\\sources'
+def loadDir         = 'New_Config'
+def pythonPath      = 'C:\\Users\\mfisys1\\AppData\\Local\\Microsoft\\WindowsApps'
+
+//HUB Links
+def hubOrg          = 'amc-blueprints'
+def hubHost         = 'github.houston.softwaregrp.net'
+def hubRepo         = 'es-automation-templates'
+def hubGitRepo_http = 'https://' + hubHost + '/' + hubOrg + '/' + hubRepo + '.git'
+def packagePath     = 'Development\\Scripts'
+def hubBranch       = 'main'
+
+// Project and build vars
+def buildProject    = 'BankDemoBuild'
+def buildNumber     = Jenkins.instance.getItem(buildProject).lastSuccessfulBuild.number
+
+pipeline {
+    agent any 
+
+     stages {
+        stage ('Copy Build Artifact') {
+            steps {
+                bat """
+                echo 'Copying artifact from projectA'
+                """
+                copyArtifacts(projectName: buildProject, filter:'*.zip', selector: specific(buildNumber), optional: true);
+                unzip zipFile: 'build_'+buildNumber+'*.zip', dir: './archive_new'
+            }
+        }
+
+     stage ('Deploy') {
+            steps {
+                bat """
+                echo 'Copying artifact from ${buildProject}'
+                """
+            }
+        }
+    }
+
+}

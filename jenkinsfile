@@ -24,18 +24,20 @@ def srcGitBranch    = 'dev'
 //ANT and ED Paths
 def antPath         = 'C:\\Users\\Public\\Micro Focus\\Enterprise Developer\\eclipse\\plugins\\org.apache.ant_1.10.12.v20211102-1452'
 def entDevPath      = '%PROGRAMFILES(X86)%\\Micro Focus\\Enterprise Developer'
+def driverPath      = '.\\environment\\build'
+def scriptPath      = '.\\environment\\script'
 def driverFile      = 'build.xml'
 def baseDir         = '.\\sources'
 def loadDir         = 'New_Config'
 def pythonPath      = 'C:\\Users\\mfisys1\\AppData\\Local\\Microsoft\\WindowsApps'
 
-//HUB Links
-def hubOrg          = 'amc-blueprints'
-def hubHost         = 'github.houston.softwaregrp.net'
-def hubRepo         = 'es-automation-templates'
-def hubGitRepo_http = 'https://' + hubHost + '/' + hubOrg + '/' + hubRepo + '.git'
-def packagePath     = 'Development\\Scripts'
-def hubBranch       = 'main'
+// //HUB Links
+// def hubOrg          = 'amc-blueprints'
+// def hubHost         = 'github.houston.softwaregrp.net'
+// def hubRepo         = 'es-automation-templates'
+// def hubGitRepo_http = 'https://' + hubHost + '/' + hubOrg + '/' + hubRepo + '.git'
+// def packagePath     = 'Development\\Scripts'
+// def hubBranch       = 'main'
 
 pipeline {
     agent any 
@@ -75,7 +77,7 @@ pipeline {
                     echo "ANT_HOME   : " ${antPath}
                     echo "Workspace  : " ${WORKSPACE}
                     echo
-                    call ant -lib "${entDevPath}\\bin\\mfant.jar" -f ${driverFile} -Dbasedir=${WORKSPACE}\\${baseDir} -Dloaddir=${WORKSPACE}\\${loadDir} -Dset64bit=true
+                    call ant -lib "${entDevPath}\\bin\\mfant.jar" -f ${driverPath}\\${driverFile} -Dbasedir=${WORKSPACE}\\${baseDir} -Dloaddir=${WORKSPACE}\\${loadDir} -Dset64bit=true
                     echo
                     echo ***************************************************Build Commpleted.
                     echo 
@@ -97,24 +99,10 @@ pipeline {
 
         stage('Artifacts collection'){
             steps {
-                dir  (hubRepo) {
-                    checkout(  [$class: 'GitSCM', 
-                                branches: [[name: hubBranch]], 
-                                extensions: [], 
-                                userRemoteConfigs: [[url: hubGitRepo_http]]
-                                ]
-                            )
-                }
-
                 bat """ 
                     @echo off
-                    cd ${hubRepo}
-                    git sparse-checkout init --cone
-                    git sparse-checkout set ${packagePath} 
-                    cd ..
-                    ${pythonPath}\\python3 ${WORKSPACE}\\${hubRepo}\\${packagePath}\\createDeployPackage.py "${WORKSPACE}\\${loadDir}" "${WORKSPACE}" "${srcGitBranch}" "${BUILD_NUMBER}" "APP"
+                    ${pythonPath}\\python3 ${WORKSPACE}\\${scriptPath}\\createDeployPackage.py "${WORKSPACE}\\${loadDir}" "${WORKSPACE}" "${srcGitBranch}" "${BUILD_NUMBER}" "APP"
                 """
-
             }   
         }
      }    
